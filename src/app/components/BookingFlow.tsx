@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Calendar, Clock, ChevronRight, Ticket } from 'lucide-react';
+import { X, Calendar, Clock, ChevronRight, Ticket, Users } from 'lucide-react';
 import type { Event } from './EventCard';
 import type { Seat } from './SeatSelection';
 import { SeatSelection } from './SeatSelection';
@@ -25,8 +25,9 @@ export interface BookingData {
 }
 
 export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlowProps) {
-  const [step, setStep] = useState<'datetime' | 'seats'>('datetime');
+  const [step, setStep] = useState<'datetime' | 'quantity' | 'seats'>('datetime');
   const [selectedShowTime, setSelectedShowTime] = useState<ShowTime | null>(null);
+  const [ticketQuantity, setTicketQuantity] = useState<number>(1);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
 
   // Mock show times
@@ -69,6 +70,10 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
 
   const handleShowTimeSelect = (showTime: ShowTime) => {
     setSelectedShowTime(showTime);
+    setStep('quantity');
+  };
+
+  const handleQuantityConfirm = () => {
     setStep('seats');
   };
 
@@ -79,8 +84,8 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
     if (isSelected) {
       setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
     } else {
-      if (selectedSeats.length >= 8) {
-        alert('Maximum 8 seats per booking');
+      if (selectedSeats.length >= ticketQuantity) {
+        alert(`Please select exactly ${ticketQuantity} ${ticketQuantity === 1 ? 'seat' : 'seats'}`);
         return;
       }
       setSelectedSeats([...selectedSeats, seat]);
@@ -125,16 +130,25 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 step === 'datetime' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
               }`}>
-                {step === 'seats' ? '✓' : '1'}
+                {step === 'quantity' || step === 'seats' ? '✓' : '1'}
               </div>
               <span className="font-medium">Select Date & Time</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <div className={`flex items-center gap-2 ${step === 'quantity' ? 'text-blue-600' : step === 'seats' ? 'text-green-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                step === 'quantity' ? 'bg-blue-600 text-white' : step === 'seats' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              }`}>
+                {step === 'seats' ? '✓' : '2'}
+              </div>
+              <span className="font-medium">Select Quantity</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
             <div className={`flex items-center gap-2 ${step === 'seats' ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 step === 'seats' ? 'bg-blue-600 text-white' : 'bg-gray-200'
               }`}>
-                2
+                3
               </div>
               <span className="font-medium">Select Seats</span>
             </div>
@@ -176,11 +190,11 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
             </div>
           )}
 
-          {step === 'seats' && selectedShowTime && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
+          {step === 'quantity' && selectedShowTime && (
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Select Your Seats</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">How many tickets do you need?</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {selectedShowTime.date} at {selectedShowTime.time}
                   </p>
@@ -192,6 +206,102 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
                   Change Date/Time
                 </button>
               </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 mb-6">
+                <div className="flex items-center justify-center gap-8">
+                  <button
+                    onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                    className="w-12 h-12 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow flex items-center justify-center text-2xl font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    −
+                  </button>
+                  
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-gray-900 mb-2">{ticketQuantity}</div>
+                    <div className="text-sm text-gray-600">
+                      {ticketQuantity === 1 ? 'Ticket' : 'Tickets'}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setTicketQuantity(Math.min(8, ticketQuantity + 1))}
+                    className="w-12 h-12 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow flex items-center justify-center text-2xl font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                {[1, 2, 4, 6].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setTicketQuantity(num)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      ticketQuantity === num
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Users className="w-5 h-5 mx-auto mb-1 text-gray-600" />
+                    <div className="font-semibold text-gray-900">{num}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-blue-600 text-xs font-semibold">!</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium text-gray-900 mb-1">Please Note:</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Maximum 8 tickets per booking</li>
+                      <li>Seats will be selected on the next page</li>
+                      <li>Price varies by seat location</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleQuantityConfirm}
+                className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg flex items-center justify-center gap-2"
+              >
+                Continue to Seat Selection
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {step === 'seats' && selectedShowTime && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Select Your Seats</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedShowTime.date} at {selectedShowTime.time} • {ticketQuantity} {ticketQuantity === 1 ? 'ticket' : 'tickets'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setStep('quantity');
+                    setSelectedSeats([]);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Change Quantity
+                </button>
+              </div>
+
+              {selectedSeats.length < ticketQuantity && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-800">
+                    Please select {ticketQuantity - selectedSeats.length} more {ticketQuantity - selectedSeats.length === 1 ? 'seat' : 'seats'}
+                  </p>
+                </div>
+              )}
 
               <SeatSelection
                 seats={seats}
@@ -209,7 +319,7 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
               {selectedSeats.length > 0 && (
                 <div>
                   <div className="text-sm text-gray-600 mb-1">
-                    {selectedSeats.length} {selectedSeats.length === 1 ? 'seat' : 'seats'} selected
+                    {selectedSeats.length} / {ticketQuantity} {ticketQuantity === 1 ? 'seat' : 'seats'} selected
                   </div>
                   <div className="text-2xl font-semibold text-gray-900">
                     ${totalPrice.toFixed(2)}
@@ -229,7 +339,7 @@ export function BookingFlow({ event, onClose, onProceedToCheckout }: BookingFlow
               {step === 'seats' && (
                 <button
                   onClick={handleProceedToCheckout}
-                  disabled={selectedSeats.length === 0}
+                  disabled={selectedSeats.length !== ticketQuantity}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <Ticket className="w-5 h-5" />
